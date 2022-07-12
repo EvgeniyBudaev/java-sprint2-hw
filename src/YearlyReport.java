@@ -30,11 +30,7 @@ public class YearlyReport {
                 "month=" + month +
                 ", amount=" + amount +
                 ", isExpense=" + isExpense +
-                '}';
-    }
-
-    public int getMonth() {
-        return month;
+                '}' + "\n";
     }
 
     public int getAmount() {

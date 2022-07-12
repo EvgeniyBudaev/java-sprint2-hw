@@ -1,5 +1,3 @@
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Scanner;
 
 public class Main {
@@ -7,21 +5,6 @@ public class Main {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         Report report = new Report();
-        ArrayList<String> listMonths = new ArrayList<>() {{
-            add("январь");
-            add("февраль");
-            add("март");
-            add("апрель");
-            add("май");
-            add("июнь");
-            add("июль");
-            add("август");
-            add("сентябрь");
-            add("октябрь");
-            add("ноябрь");
-            add("декабрь");
-        }};
-        HashMap<Integer, ArrayList<MonthlyReport>> monthlyReports = new HashMap<>();
 
         printMenu();
         int userInput = scanner.nextInt();
@@ -33,6 +16,10 @@ public class Main {
                 report.readYearlyFiles();
             } else if (userInput == 3) {
                 report.checkReport();
+            } else if (userInput == 4) {
+                report.getInfoMonthlyReport();
+            } else if (userInput == 5) {
+                report.getInfoYearlyReport();
             } else {
                 System.out.println("Извините, такой команды пока нет.");
             }

@@ -1,6 +1,6 @@
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Optional;
 
 public class Report {
     private final String filesPath = "resources/";
@@ -10,6 +10,20 @@ public class Report {
     private ArrayList<YearlyReport> filesYearly;
     private HashMap<Integer, ArrayList<MonthlyReport>> monthlyReports = new HashMap<>();
     private HashMap<Integer, ArrayList<YearlyReport>> yearlyReports = new HashMap<>();
+    ArrayList<String> listMonths = new ArrayList<>() {{
+        add("январь");
+        add("февраль");
+        add("март");
+        add("апрель");
+        add("май");
+        add("июнь");
+        add("июль");
+        add("август");
+        add("сентябрь");
+        add("октябрь");
+        add("ноябрь");
+        add("декабрь");
+    }};
 
     public void readMonthlyFiles() {
         for (int i = 1; i <= 3; i++) {
@@ -46,9 +60,14 @@ public class Report {
             int amount = Integer.parseInt(lineContents[1]);
             boolean isExpense = Boolean.parseBoolean(lineContents[2]);
             yearlyReport = new YearlyReport(month, amount, isExpense);
-            filesYearly.add(yearlyReport);
+            if (j % 2 != 0) {
+                filesYearly.add(yearlyReport);
+            } else {
+                filesYearly.add(yearlyReport);
+                yearlyReports.put(month, filesYearly);
+                filesYearly = new ArrayList<>();
+            }
         }
-        yearlyReports.put(month, filesYearly);
         System.out.println("Годовой отчёт считан");
     }
 
@@ -56,53 +75,49 @@ public class Report {
         if (monthlyReports.isEmpty() || yearlyReports.isEmpty()) {
             System.out.println("Месячные или годовой отчеты не считаны");
         } else {
-            long totalExpenseMonthly = 0;
-            long totalIncomeMonthly = 0;
-            AtomicLong totalExpenseYearly = new AtomicLong();
-            AtomicLong totalIncomeYearly = new AtomicLong();
-            boolean isCorrectly = false;
+            boolean isCorrectly = true;
 
-            for (ArrayList<MonthlyReport> monthlyReport: monthlyReports.values()) {
-                long expenseMonth = monthlyReport.stream().mapToLong(report -> {
+            for (int i = 1; i <= monthlyReports.size(); i++) {
+                ArrayList<MonthlyReport> monthlyReport1 = monthlyReports.get(i);
+                ArrayList<YearlyReport> yearlyReport1 = yearlyReports.get(i);
+
+                long expenseMonth = monthlyReport1.stream().mapToLong(report -> {
                     if (report.isExpense()) {
-                        return (long) report.getQuantity() *report.getSumOfOne();
+                        return (long) report.getQuantity() * report.getSumOfOne();
                     } else {
                         return 0;
                     }
                 }).sum();
-                long incomeMonth = monthlyReport.stream().mapToLong(report -> {
+                long incomeMonth = monthlyReport1.stream().mapToLong(report -> {
                     if (!report.isExpense()) {
-                        return (long) report.getQuantity() *report.getSumOfOne();
+                        return (long) report.getQuantity() * report.getSumOfOne();
                     } else {
                         return 0;
                     }
                 }).sum();
-                System.out.println("expenseMonth: " + expenseMonth);
-                totalExpenseMonthly += expenseMonth;
-                totalIncomeMonthly += incomeMonth;
-            }
 
-            for (ArrayList<YearlyReport> yearlyReport: yearlyReports.values()) {
-                yearlyReport.stream().forEach(report -> {
+                long expenseYearly = yearlyReport1.stream().mapToLong(report -> {
                     if (report.isExpense()) {
-                        totalExpenseYearly.addAndGet(report.getAmount());
+                        return report.getAmount();
                     } else {
-                        totalIncomeYearly.addAndGet(report.getAmount());
+                        return 0;
                     }
-                });
-            }
-            System.out.println("totalExpenseMonthly: " + totalExpenseMonthly);
-            System.out.println("totalExpenseYearly.get(): " + totalExpenseYearly.get());
+                }).sum();
+                long incomeYearly = yearlyReport1.stream().mapToLong(report -> {
+                    if (!report.isExpense()) {
+                        return report.getAmount();
+                    } else {
+                        return 0;
+                    }
+                }).sum();
 
-            if (totalExpenseMonthly != totalExpenseYearly.get()) {
-                System.out.println("В " + " несоответствие расходов");
-                isCorrectly = false;
-            }
-            else if (totalIncomeMonthly != totalIncomeYearly.get()) {
-                System.out.println("В " + " несоответствие доходов");
-                isCorrectly = false;
-            } else {
-                isCorrectly = true;
+                if (expenseMonth != expenseYearly) {
+                    System.out.println("В " + listMonths.get(i - 1) + " несоответствие расходов");
+                    isCorrectly = false;
+                } else if (incomeMonth != incomeYearly) {
+                    System.out.println("В " + listMonths.get(i - 1) + " несоответствие доходов");
+                    isCorrectly = false;
+                }
             }
 
             if (isCorrectly) {
@@ -111,4 +126,96 @@ public class Report {
         }
     }
 
+    public void getInfoMonthlyReport() {
+        for (int i = 1; i <= monthlyReports.size(); i++) {
+            System.out.println(listMonths.get(i - 1) + ":");
+            ArrayList<MonthlyReport> monthlyInfo = monthlyReports.get(i);
+            getProfitableCommodityPerMonth(monthlyInfo);
+            getMaxExpensePerMonth(monthlyInfo);
+        }
+    }
+
+    public void getProfitableCommodityPerMonth(ArrayList<MonthlyReport> monthlyInfo) {
+        Optional<MonthlyReport> profitableCommodity = monthlyInfo.stream()
+                .filter(el -> !el.isExpense())
+                .max((el1, el2) -> (el1.getQuantity()*el1.getSumOfOne())-(el2.getQuantity()*el2.getSumOfOne()));
+        if (profitableCommodity.isPresent()) { // isPresent - если есть значение
+            String maxProfitItemName = profitableCommodity.get().getItemName();
+            int maxProfit = profitableCommodity.get().getQuantity() * profitableCommodity.get().getSumOfOne();
+            System.out.print("Самый прибыльный товар: " + maxProfitItemName);
+            System.out.println(", продан на сумму: " + maxProfit);
+        } else {
+            System.out.println("Товар не найден");
+        }
+    }
+
+    public void getMaxExpensePerMonth(ArrayList<MonthlyReport> monthlyInfo) {
+        Optional<MonthlyReport> expenseCommodity = monthlyInfo.stream()
+                .filter(MonthlyReport::isExpense)
+                .max((el1, el2) -> (el1.getQuantity()*el1.getSumOfOne())-(el2.getQuantity()*el2.getSumOfOne()));
+        if (expenseCommodity.isPresent()) { // isPresent - если есть значение
+            String maxExpenseItemName = expenseCommodity.get().getItemName();
+            int maxExpense = expenseCommodity.get().getQuantity() * expenseCommodity.get().getSumOfOne();
+            System.out.print("Самая большая трата: " + maxExpenseItemName);
+            System.out.println(", потрачено: " + maxExpense);
+        } else {
+            System.out.println("Товар не найден");
+        }
+    }
+
+    public void getInfoYearlyReport() {
+        System.out.println("Рассматриваемый год: 2021");
+        System.out.println(yearlyReports);
+        long expenseYearly = 0;
+        long incomeYearly = 0;
+        int countMoths = yearlyReports.size();
+
+        for (int i = 1; i <= yearlyReports.size(); i++) {
+            long expenseToMonth = yearlyReports.get(i).stream().mapToLong(report -> {
+                if (report.isExpense()) {
+                    return report.getAmount();
+                } else {
+                    return 0;
+                }
+            }).sum();
+//            long expenseToMonth = findSum(yearlyReports, i, true);
+            expenseYearly += expenseToMonth;
+            long incomeToMonth = yearlyReports.get(i).stream().mapToLong(report -> {
+                if (!report.isExpense()) {
+                    return report.getAmount();
+                } else {
+                    return 0;
+                }
+            }).sum();
+//            long incomeToMonth = findSum(yearlyReports, i, false);
+            incomeYearly += incomeToMonth;
+            long profit = incomeToMonth - expenseToMonth;
+            System.out.println("Прибыль за " + listMonths.get(i - 1) + " составила: " + profit);
+        }
+
+        long averageExpenseYearly = expenseYearly / countMoths;
+        long averageIncomeYearly = incomeYearly / countMoths;
+        System.out.println("Средний расход за все месяцы: " + averageExpenseYearly);
+        System.out.println("Средний доход за все месяцы: " + averageIncomeYearly);
+    }
+
+    public long findSum(HashMap<Integer, ArrayList<YearlyReport>> reports, int index, boolean isExpense) {
+        return reports.get(index).stream().mapToLong(report -> {
+            if (report.isExpense() == isExpense) {
+                return report.getAmount();
+            } else {
+                return 0;
+            }
+        }).sum();
+    }
+
+    public long findSum(ArrayList<MonthlyReport> reports) {
+        return reports.stream().mapToLong(report -> {
+            if (report.isExpense()) {
+                return (long) report.getQuantity() * report.getSumOfOne();
+            } else {
+                return 0;
+            }
+        }).sum();
+    }
 }
