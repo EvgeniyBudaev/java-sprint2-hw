@@ -3,13 +3,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class ReadFile {
-    static String readFileContentsOrNull(String path)
-    {
+    static String readFileContentsOrNull(String path, String name) {
         try {
             return Files.readString(Path.of(path));
         } catch (IOException e) {
-            System.out.println("Невозможно прочитать файл с месячным отчётом." +
-                    " Возможно, файл не находится в нужной директории.");
+            System.out.printf(
+                    "Невозможно прочитать файл с %s отчётом. Возможно, файл не находится в нужной директории.", name);
             return null;
         }
     }

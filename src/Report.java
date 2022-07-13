@@ -1,6 +1,4 @@
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
 
 public class Report {
     private final String filesPath = "resources/";
@@ -24,7 +22,7 @@ public class Report {
     public void readMonthlyFiles() {
         for (int i = 1; i <= 3; i++) {
             String monthPath = filesPath + "m.20210" + i + ".csv";
-            String data = ReadFile.readFileContentsOrNull(monthPath);
+            String data = ReadFile.readFileContentsOrNull(monthPath, "месячным");
             if (data == null) {
                 break;
             }
@@ -33,10 +31,14 @@ public class Report {
 
             for (int j = 1; j < lines.length; j++) {
                 String[] lineContents = lines[j].split(",");
-                String itemName = lineContents[0];
-                boolean isExpense = Boolean.parseBoolean(lineContents[1]);
-                int quantity = Integer.parseInt(lineContents[2]);
-                int sumOfOne = Integer.parseInt(lineContents[3]);
+                int _itemName = 0;
+                String itemName = lineContents[_itemName];
+                int _isExpenseMonthly = 1;
+                boolean isExpense = Boolean.parseBoolean(lineContents[_isExpenseMonthly]);
+                int _quantity = 2;
+                int quantity = Integer.parseInt(lineContents[_quantity]);
+                int _sumOfOne = 3;
+                int sumOfOne = Integer.parseInt(lineContents[_sumOfOne]);
                 MonthlyReport monthlyReport = new MonthlyReport(itemName, isExpense, quantity, sumOfOne);
                 filesMonthly.add(monthlyReport);
             }
@@ -46,15 +48,21 @@ public class Report {
     }
 
     public void readYearlyFiles() {
-        String data = ReadFile.readFileContentsOrNull(filesPath + "y.2021.csv");
+        String data = ReadFile.readFileContentsOrNull(filesPath + "y.2021.csv", "годовым");
+        if (data == null) {
+            return;
+        }
         String[] lines = data.split(System.lineSeparator());
         ArrayList<YearlyReport> filesYearly = new ArrayList<>();
         int month = 0;
         for (int j = 1; j < lines.length; j++) {
             String[] lineContents = lines[j].split(",");
-            month = Integer.parseInt(lineContents[0]);
-            int amount = Integer.parseInt(lineContents[1]);
-            boolean isExpense = Boolean.parseBoolean(lineContents[2]);
+            int _month = 0;
+            month = Integer.parseInt(lineContents[_month]);
+            int _amount = 1;
+            int amount = Integer.parseInt(lineContents[_amount]);
+            int _isExpenseYearly = 2;
+            boolean isExpense = Boolean.parseBoolean(lineContents[_isExpenseYearly]);
             YearlyReport yearlyReport = new YearlyReport(month, amount, isExpense);
             if (j % 2 != 0) {
                 filesYearly.add(yearlyReport);
@@ -86,10 +94,10 @@ public class Report {
             long incomeYearly = findSumYearly(yearlyReportPerMonth, false);
 
             if (expenseMonth != expenseYearly) {
-                System.out.println("В " + listMonths.get(i - 1) + " несоответствие расходов");
+                System.out.printf("В %s несоответствие расходов%n", listMonths.get(i - 1));
                 isCorrectly = false;
             } else if (incomeMonth != incomeYearly) {
-                System.out.println("В " + listMonths.get(i - 1) + " несоответствие доходов");
+                System.out.printf("В %s несоответствие доходов%n", listMonths.get(i - 1));
                 isCorrectly = false;
             }
         }
@@ -108,37 +116,42 @@ public class Report {
         for (int i = 1; i <= monthlyReports.size(); i++) {
             System.out.println(listMonths.get(i - 1) + ":");
             ArrayList<MonthlyReport> monthlyInfo = monthlyReports.get(i);
-            getProfitableCommodityPerMonth(monthlyInfo);
-            getMaxExpensePerMonth(monthlyInfo);
+            try {
+                getProfitableCommodityPerMonth(monthlyInfo);
+                getMaxExpensePerMonth(monthlyInfo);
+            } catch (NoEntityException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
-    public void getProfitableCommodityPerMonth(ArrayList<MonthlyReport> monthlyInfo) {
-        Optional<MonthlyReport> profitableCommodity = monthlyInfo.stream()
+    public void getProfitableCommodityPerMonth(ArrayList<MonthlyReport> monthlyInfo) throws NoEntityException {
+        if (monthlyInfo == null || monthlyInfo.isEmpty()) {
+            throw new IllegalArgumentException("Список пуст");
+        }
+
+        MonthlyReport profitableCommodity = monthlyInfo.stream()
                 .filter(el -> !el.isExpense())
-                .max((el1, el2) -> (el1.getQuantity() * el1.getSumOfOne()) - (el2.getQuantity() * el2.getSumOfOne()));
-        if (profitableCommodity.isPresent()) { // isPresent - если есть значение
-            String maxProfitItemName = profitableCommodity.get().getItemName();
-            int maxProfit = profitableCommodity.get().getQuantity() * profitableCommodity.get().getSumOfOne();
-            System.out.print("Самый прибыльный товар: " + maxProfitItemName);
-            System.out.println(", продан на сумму: " + maxProfit);
-        } else {
-            System.out.println("Товар не найден");
-        }
+                .max(Comparator.comparingInt(MonthlyReport::getSum))
+                .orElseThrow(() -> new NoEntityException("Товар не найден"));
+
+        String maxProfitItemName = profitableCommodity.getItemName();
+        int maxProfit = profitableCommodity.getQuantity() * profitableCommodity.getSumOfOne();
+        System.out.print("Самый прибыльный товар: " + maxProfitItemName);
+        System.out.println(", продан на сумму: " + maxProfit);
     }
 
-    public void getMaxExpensePerMonth(ArrayList<MonthlyReport> monthlyInfo) {
-        Optional<MonthlyReport> expenseCommodity = monthlyInfo.stream()
+    public void getMaxExpensePerMonth(ArrayList<MonthlyReport> monthlyInfo) throws NoEntityException {
+        MonthlyReport expenseCommodity = Optional.ofNullable(monthlyInfo)
+                .stream()
+                .flatMap(Collection::stream)
                 .filter(MonthlyReport::isExpense)
-                .max((el1, el2) -> (el1.getQuantity() * el1.getSumOfOne()) - (el2.getQuantity() * el2.getSumOfOne()));
-        if (expenseCommodity.isPresent()) { // isPresent - если есть значение
-            String maxExpenseItemName = expenseCommodity.get().getItemName();
-            int maxExpense = expenseCommodity.get().getQuantity() * expenseCommodity.get().getSumOfOne();
-            System.out.print("Самая большая трата: " + maxExpenseItemName);
-            System.out.println(", потрачено: " + maxExpense);
-        } else {
-            System.out.println("Товар не найден");
-        }
+                .max(Comparator.comparingInt(MonthlyReport::getSum))
+                .orElseThrow(() -> new NoEntityException("Товар не найден"));
+        String maxExpenseItemName = expenseCommodity.getItemName();
+        int maxExpense = expenseCommodity.getQuantity() * expenseCommodity.getSumOfOne();
+        System.out.print("Самая большая трата: " + maxExpenseItemName);
+        System.out.println(", потрачено: " + maxExpense);
     }
 
     public void getInfoYearlyReport() {

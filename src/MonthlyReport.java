@@ -51,4 +51,8 @@ public class MonthlyReport {
     public int getSumOfOne() {
         return sumOfOne;
     }
+
+    public int getSum() {
+        return quantity * sumOfOne;
+    }
 }

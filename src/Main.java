@@ -6,10 +6,10 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
         Report report = new Report();
 
-        printMenu();
-        int userInput = scanner.nextInt();
+        while (true) {
+            printMenu();
+            int userInput = scanner.nextInt();
 
-        while (userInput != 0) {
             if (userInput == 1) {
                 report.readMonthlyFiles();
             } else if (userInput == 2) {
@@ -20,13 +20,14 @@ public class Main {
                 report.getInfoMonthlyReport();
             } else if (userInput == 5) {
                 report.getInfoYearlyReport();
+            } else if (userInput == 0) {
+                System.out.println("Вы вышли из приложения!");
+                break;
             } else {
                 System.out.println("Извините, такой команды пока нет.");
             }
-
-            printMenu();
-            userInput = scanner.nextInt();
         }
+
         System.out.println("Программа завершена");
         scanner.close();
     }
