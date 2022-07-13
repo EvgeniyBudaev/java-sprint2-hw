@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.function.ToLongFunction;
 
 public class Report {
     private final String filesPath = "resources/";
@@ -87,11 +88,11 @@ public class Report {
             ArrayList<MonthlyReport> monthlyReportPerMonth = monthlyReports.get(i);
             ArrayList<YearlyReport> yearlyReportPerMonth = yearlyReports.get(i);
 
-            long expenseMonth = findSum(monthlyReportPerMonth, true);
-            long incomeMonth = findSum(monthlyReportPerMonth, false);
+            long expenseMonth = findSum(monthlyReportPerMonth, report -> report.isExpense() ? report.getSum() : 0);
+            long incomeMonth = findSum(monthlyReportPerMonth, report -> !report.isExpense() ? report.getSum() : 0);
 
-            long expenseYearly = findSumYearly(yearlyReportPerMonth, true);
-            long incomeYearly = findSumYearly(yearlyReportPerMonth, false);
+            long expenseYearly = findSum(yearlyReportPerMonth, report -> report.isExpense() ? report.getAmount() : 0);
+            long incomeYearly = findSum(yearlyReportPerMonth, report -> !report.isExpense() ? report.getAmount() : 0);
 
             if (expenseMonth != expenseYearly) {
                 System.out.printf("В %s несоответствие расходов%n", listMonths.get(i - 1));
@@ -191,23 +192,9 @@ public class Report {
         }).sum();
     }
 
-    public long findSum(ArrayList<MonthlyReport> reports, boolean isExpense) {
-        return reports.stream().mapToLong(report -> {
-            if (report.isExpense() == isExpense) {
-                return (long) report.getQuantity() * report.getSumOfOne();
-            } else {
-                return 0;
-            }
-        }).sum();
-    }
-
-    public long findSumYearly(ArrayList<YearlyReport> reports, boolean isExpense) {
-        return reports.stream().mapToLong(report -> {
-            if (report.isExpense() == isExpense) {
-                return report.getAmount();
-            } else {
-                return 0;
-            }
-        }).sum();
+    public <T> long findSum(ArrayList<? extends T> reports, ToLongFunction<T> function) {
+        return reports.stream()
+                .mapToLong(function)
+                .sum();
     }
 }

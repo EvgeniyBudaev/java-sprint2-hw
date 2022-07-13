@@ -40,4 +40,8 @@ public class YearlyReport {
     public boolean isExpense() {
         return isExpense;
     }
+
+    public boolean getIisExpense() {
+        return isExpense;
+    }
 }
